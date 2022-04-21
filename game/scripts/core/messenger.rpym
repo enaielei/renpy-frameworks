@@ -1,0 +1,42 @@
+init python in messenger:
+    from store import table
+
+    class User(table.Record):
+        def __init__(self, name, status=None):
+            table.Record.__init__(self)
+
+            self.name = name
+            self.status = status
+
+    class Conversation(table.Record):
+        @property
+        def name(self):
+            p = self.participants
+            return self._name or ", ".join(map(lambda e: e.name, p))
+
+        @name.setter
+        def name(self, value):
+            self._name = value
+
+        def __init__(self, name=None):
+            table.Record.__init__(self)
+
+            self.name = name
+
+    class Membership(table.Record):
+        def __init__(self, conversation, user):
+            table.Record.__init__(self)
+
+            self.conversation = conversation
+            self.user = user
+
+    User.set_relationship(Membership, table.Rel.MANY)
+
+    Conversation.set_relationship(Membership, table.Rel.MANY)
+
+    Membership.set_relationship(Conversation, table.Rel.ONE)
+    Membership.set_relationship(User, table.Rel.ONE)
+
+default _users = []
+default _conversations = []
+default _memberships = []

@@ -2,3 +2,6 @@ init python:
     renpy.load_module("scripts/core/gui")
     renpy.load_module("scripts/core/config")
     renpy.load_module("scripts/core/build")
+
+    renpy.load_module("scripts/core/table")
+    renpy.load_module("scripts/core/messenger")

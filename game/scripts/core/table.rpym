@@ -1,0 +1,137 @@
+init python in table:
+    import store
+
+    class Relationship():
+        ONE = 0
+        MANY = 1
+
+    Rel = Relationship
+
+    class Record():
+        _name = None
+
+        @property
+        def id(self):
+            return self._id
+
+        def __init__(self):
+            self._id = 0
+            self.table = None
+
+            self.__class__.append(self)
+
+        def destroy(self):
+            if self.table:
+                self.table.remove(self)
+
+            return self
+        
+        def update(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+            return self
+        
+        @classmethod
+        def append(cls, *records):
+            name = cls._name or "_{}s".format(cls.__name__.lower())
+            get = getattr(store, name, [])
+            for record in records:
+                if record in get:
+                    continue
+                get.append(record)
+                record._id = cls.get_next_id()
+                record.table = cls
+
+            return cls
+
+        @classmethod
+        def remove(cls, *records):
+            name = cls._name or "_{}s".format(cls.__name__.lower())
+            get = getattr(store, name, [])
+            for record in records:
+                while record in get:
+                    get.remove(record)
+                    record._id = 0
+                    record.table = None
+
+            return cls
+
+        @classmethod
+        def get_min_id(cls):
+            get = cls.get()
+            if get:
+                return min(record.id for record in get)
+            
+            return 0
+
+        @classmethod
+        def get_max_id(cls):
+            get = cls.get()
+            if get:
+                return max(record.id for record in get)
+            
+            return 0
+
+        @classmethod
+        def get_next_id(cls):
+            return cls.get_max_id() + 1
+
+        @classmethod
+        def get(cls, *args, **kwargs):
+            name = cls._name or "_{}s".format(cls.__name__.lower())
+            all_ = getattr(store, name, [])
+
+            if len(args) > 0 or len(kwargs) > 0:
+                arg = args[0] if len(args) > 0 else None
+
+                if not callable(arg): cond = renpy.partial(
+                    cls._get, kwargs=kwargs, condition=arg)
+                else: cond = arg
+                
+                return tuple(filter(cond, all_))
+            return tuple(all_)
+
+        @classmethod
+        def get_first(cls, *args, **kwargs):
+            f = cls.get(*args, **kwargs)
+            return f[0] if len(f) > 0 else None
+
+        @classmethod
+        def get_last(cls):
+            f = cls.get(*args, **kwargs)
+            return f[-1] if len(f) > 0 else None
+
+        @classmethod
+        def set_relationship(cls, tcls, type=Rel.ONE, name=None, id_name=None, target_id_name=None):
+            fname = cls.__name__.lower()
+            tname = tcls.__name__.lower()
+            id = id_name or "{}_id".format(fname)
+            
+            if type == Rel.MANY:
+                name = name or tname + "s"
+                setattr(cls, name, property(lambda s: tcls.get(**{id: s.id})))
+            elif type == Rel.ONE:
+                name = name or tname
+                pname = "_{}".format(name)
+                tid = target_id_name or "{}_id".format(name)
+                setattr(cls, name, property(
+                    lambda s: getattr(s, pname, None),
+                    lambda s, v: setattr(s, pname, v) if isinstance(v, tcls) \
+                        else setattr(s, pname, None)
+                ))
+                setattr(cls, tid, property(
+                    lambda s: getattr(s, name).id if getattr(s, name, None) \
+                        else 0,
+                    lambda s, v: setattr(s, name, tcls.get(id=v)),
+                ))
+
+            return cls
+
+        @classmethod
+        def _get(cls, record, kwargs, condition=None):
+            condition = "and" if condition is None else condition.lower()
+            ev = (getattr(record, k) == v for k, v in kwargs.items())
+            return all(ev) if condition == "and" else (
+                any(ev) if condition == "or" else False
+            )
