@@ -1,0 +1,4 @@
+init python:
+    renpy.load_module("scripts/core/gui")
+    renpy.load_module("scripts/core/config")
+    renpy.load_module("scripts/core/build")
