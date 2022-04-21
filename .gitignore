@@ -150,3 +150,23 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# VSCode
+.vscode/
+
+# Ren'Py
+# Source: https://github.com/renpy/renpy/blob/master/.gitignore
+# Compiled Ren'Py files.
+*.rpyc
+*.rpyb
+*.rpymc
+
+# Ren'Py log files.
+log.txt
+errors.txt
+traceback.txt
+lint.txt
+
+# Created directories.
+game/saves/
+game/cache/
