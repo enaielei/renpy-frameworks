@@ -2,11 +2,20 @@ init python in messenger:
     from store import table
 
     class User(table.Record):
-        def __init__(self, name, status=None):
-            table.Record.__init__(self)
+        @property
+        def conversations(self):
+            return tuple(map(lambda m: m.conversation, self.memberships))
 
-            self.name = name
-            self.status = status
+        def __init__(self, name, status=None, *conversations):
+            table.Record.__init__(self, name=name, status=status)
+            self.add_conversations(*conversations)
+
+        def add_conversations(self, *conversations):
+            cs = self.conversations
+            for c in conversations:
+                if c not in cs: Membership(c, self)
+            
+            return self
 
     class Conversation(table.Record):
         @property
@@ -18,24 +27,36 @@ init python in messenger:
         def name(self, value):
             self._name = value
 
-        def __init__(self, name=None):
-            table.Record.__init__(self)
+        @property
+        def participants(self):
+            return tuple(map(lambda m: m.user, self.memberships))
 
-            self.name = name
+        def __init__(self, name=None, *participants):
+            table.Record.__init__(self, name=name)
+            self.add_participants(*participants)
+
+        def add_participants(self, *participants):
+            ps = self.participants
+            for p in participants:
+                if p not in ps: Membership(self, p)
+            
+            return self
 
     class Membership(table.Record):
         def __init__(self, conversation, user):
-            table.Record.__init__(self)
+            table.Record.__init__(self, conversation=conversation, user=user)
 
-            self.conversation = conversation
-            self.user = user
+    class Message(table.Record):
+        def __init__(self, conversation, user, content):
+            table.Record.__init__(
+                self, conversation=conversation, user=user, content=content)
 
-    User.set_relationship(Membership, table.Rel.MANY)
+    User.relate(Membership, table.Rel.MANY)
 
-    Conversation.set_relationship(Membership, table.Rel.MANY)
+    Conversation.relate(Membership, table.Rel.MANY)
 
-    Membership.set_relationship(Conversation, table.Rel.ONE)
-    Membership.set_relationship(User, table.Rel.ONE)
+    Membership.relate(Conversation, table.Rel.ONE)
+    Membership.relate(User, table.Rel.ONE)
 
 default _users = []
 default _conversations = []

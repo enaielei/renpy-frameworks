@@ -11,21 +11,21 @@ init python hide:
         renpy.load_module("scripts/{}/init".format(module))
 
 init python:
-    from store.messenger import User, Conversation, Membership
+    from store.messenger import User, Conversation, Membership, Message
 
 label start:
     python:
-        User("Name 1")
-        User("Name 2")
-        User("Name 3")
+        User("Name 1").create()
+        User("Name 2").create()
+        User("Name 3").create()
 
-        Conversation("Name 1")
-        Conversation("Name 2")
-        Conversation("Name 3")
+        Conversation("Name 1").create()
+        Conversation("Name 2").create()
+        Conversation("Name 3").create()
 
-        Membership(Conversation.get_first(), User.get_first())
-        Membership(Conversation.get_first(), User.get()[1])
-        Membership(Conversation.get_first(), User.get()[2])
+        Membership(Conversation.get_first(), User.get_first()).create()
+        Membership(Conversation.get_first(), User.get()[1]).create()
+        Membership(Conversation.get_first(), User.get()[2]).create()
 
     "Hello World!!!"
     "Hello World!!"

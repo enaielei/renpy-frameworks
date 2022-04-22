@@ -1,5 +1,6 @@
 init python in table:
     import store
+    from datetime import datetime
 
     class Relationship():
         ONE = 0
@@ -9,20 +10,53 @@ init python in table:
 
     class Record():
         _name = None
+        _uniqueness = ["id"]
+
+        @property
+        def table(self):
+            return self._table
 
         @property
         def id(self):
             return self._id
 
-        def __init__(self):
+        @property
+        def created_at(self):
+            return self._created
+
+        @property
+        def updated_at(self):
+            return self._updated
+
+        @property
+        def existing(self):
+            if not self.table: return False
+            uniqueness = self.table._uniqueness + getattr(
+                self.table, "uniqueness", [])
+            us = map(
+                lambda e: (e,) if not isinstance(e, (list, tuple, set)) \
+                    else tuple(e), uniqueness)
+            us = ({p: getattr(self, p) for p in pr} for pr in us)
+            return any(
+                self.table.get_first(**u) for u in us
+            )
+
+        def __init__(self, **kwargs):
+            self._table = None
             self._id = 0
-            self.table = None
+            self._created_at = None
+            self._updated_at = None
 
-            self.__class__.append(self)
+            self.update(**kwargs)
 
-        def destroy(self):
-            if self.table:
-                self.table.remove(self)
+        def create(self):
+            if not self.existing:
+                self._table = self.__class__
+                self._id = self.table.get_next_id()
+                self._created_at = datetime.now()
+                name = self.table._name or "_{}s".format(self.table.__name__.lower())
+                get = getattr(store, name, [])
+                get.append(self)
 
             return self
         
@@ -30,31 +64,28 @@ init python in table:
             for k, v in kwargs.items():
                 setattr(self, k, v)
 
+            self._updated_at = datetime.now()
+            return self
+
+        def delete(self):
+            if self.existing:
+                name = self.table._name or "_{}s".format(self.table.__name__.lower())
+                get = getattr(store, name, [])
+                while self.existing:
+                    get.remove(self)
+                    self._table = None
+                    self._id = 0
+                    self._created_at = None
             return self
         
         @classmethod
         def append(cls, *records):
-            name = cls._name or "_{}s".format(cls.__name__.lower())
-            get = getattr(store, name, [])
-            for record in records:
-                if record in get:
-                    continue
-                get.append(record)
-                record._id = cls.get_next_id()
-                record.table = cls
-
+            for record in records: record.create()
             return cls
 
         @classmethod
         def remove(cls, *records):
-            name = cls._name or "_{}s".format(cls.__name__.lower())
-            get = getattr(store, name, [])
-            for record in records:
-                while record in get:
-                    get.remove(record)
-                    record._id = 0
-                    record.table = None
-
+            for record in records: record.delete()
             return cls
 
         @classmethod
@@ -103,7 +134,7 @@ init python in table:
             return f[-1] if len(f) > 0 else None
 
         @classmethod
-        def set_relationship(cls, tcls, type=Rel.ONE, name=None, id_name=None, target_id_name=None):
+        def relate(cls, tcls, type=Rel.ONE, name=None, id_name=None, target_id_name=None):
             fname = cls.__name__.lower()
             tname = tcls.__name__.lower()
             id = id_name or "{}_id".format(fname)
@@ -131,7 +162,14 @@ init python in table:
         @classmethod
         def _get(cls, record, kwargs, condition=None):
             condition = "and" if condition is None else condition.lower()
-            ev = (getattr(record, k) == v for k, v in kwargs.items())
+            ev = (getattr(record, k) == v if hasattr(record, k) else False \
+                for k, v in kwargs.items())
             return all(ev) if condition == "and" else (
                 any(ev) if condition == "or" else False
             )
+
+        min_id = get_min_id
+        max_id = get_max_id
+        next_id = get_next_id
+        first = get_first
+        last = get_last
