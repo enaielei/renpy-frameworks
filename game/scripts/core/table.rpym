@@ -2,6 +2,14 @@ init python in table:
     import store
     from datetime import datetime
 
+    def pluralize(string):
+        if string.endswith("s"):
+            return string + "es"
+        
+        return string + "s"
+
+    pl = pluralize
+
     class Relationship():
         ONE = 0
         MANY = 1
@@ -58,7 +66,7 @@ init python in table:
                 self._table = self.__class__
                 self._id = self.table.get_next_id()
                 self._created_at = datetime.now()
-                name = self.table._name or "_{}s".format(self.table.__name__.lower())
+                name = self.table._name or "_{}".format(pl(self.table.__name__.lower()))
                 get = getattr(store, name, [])
                 get.append(self)
 
@@ -72,7 +80,7 @@ init python in table:
 
         def delete(self):
             if self.existing:
-                name = self.table._name or "_{}s".format(self.table.__name__.lower())
+                name = self.table._name or "_{}".format(pl(self.table.__name__.lower()))
                 get = getattr(store, name, [])
                 while self.existing:
                     get.remove(self)
@@ -118,7 +126,7 @@ init python in table:
             _sort = (_sort,) if isinstance(_sort, basestring) else _sort
             _sort = (lambda e, n=_sort: [getattr(e, n_, None) for n_ in n]) if isinstance(_sort, (tuple, list, set)) else _sort
             _reverse = kwargs.pop("_reverse", False)
-            name = cls._name or "_{}s".format(cls.__name__.lower())
+            name = cls._name or "_{}".format(pl(cls.__name__.lower()))
             all_ = getattr(store, name, [])
 
             if len(kwargs) > 0:
@@ -152,7 +160,7 @@ init python in table:
             id = id_name or "{}_id".format(fname)
             
             if type == Rel.MANY:
-                name = name or tname + "s"
+                name = name or pl(tname)
                 # setattr(cls, name, property(lambda s: tcls.get(**{id: s.id})))
                 setattr(cls, name, lambda s, _sort=None, _reverse=False: \
                     tcls.get(**{"_sort": _sort, "_reverse": _reverse, id: s.id}))

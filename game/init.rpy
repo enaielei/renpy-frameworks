@@ -12,7 +12,7 @@ init python hide:
 
 init python:
     from datetime import datetime
-    from store.messenger import User, Conversation, Membership, Message
+    from store.messenger import Status, User, Conversation, Membership, Message
 
 label start:
     python:
@@ -39,41 +39,54 @@ label start:
         u1.add_message(c1, "Hello World", datetime(2022, 4, 21, 13, 27))
         u3.add_message(c1, "Whoah, chill dude!", datetime(2022, 4, 21, 13, 28))
 
-    call screen messenger(u1)
+    show screen messenger(u1)
     "Hello World!!!"
     "Hello World!!"
     "Hello World!"
     "Hello World"
     return
 
-screen messenger(user):
-    default membership = None 
+transform delayed_blink(delay, cycle):
+    alpha .5
 
+    pause delay
+
+    block:
+        linear .2 alpha 1.0
+        pause .2
+        linear .2 alpha 0.5
+        pause (cycle - .4)
+        repeat
+
+screen messenger(user):
     frame:
         background "#555555"
         xysize (0.25, 0.75)
         align (0.5, 0.5)
 
-        if membership is None:
+        if user.active_membership is None:
             viewport:
                 vbox:
                     spacing 20
 
                     for mem in user.memberships():
                         button:
-                            action SetScreenVariable("membership", mem)
+                            action SetField(user, "active_membership", mem)
 
                             vbox:
                                 text mem.conversation.name:
                                     hover_color "#0f0"
         else:
+            python:
+                con = user.active_membership.conversation
+                typing = con.members_With_status(Status.TYPING)
             vbox:
                 xfill True
                 spacing 20
 
-                textbutton membership.conversation.name:
+                textbutton con.name:
                     text_hover_color "#0f0"
-                    action SetScreenVariable("membership", None)
+                    action SetField(user, "active_membership", None)
                 viewport:
                     xfill True
                     mousewheel True
@@ -82,7 +95,15 @@ screen messenger(user):
                         xfill True
                         spacing 20
 
-                        for mes in membership.conversation.messages(_sort="datetime"):
+                        for mes in con.messages(_sort="datetime"):
                             text "{size=-5}[mes.sender.name]{/size}\n[mes.content]":
                                 xalign (0.0 if mes.sender != user else 1.0)
+                        
+                        if typing:
+                            use typing_indicator()
 
+screen typing_indicator():
+    hbox:
+        text "▣" at delayed_blink(0.0, 0.75)
+        text "▣" at delayed_blink(0.1, 0.75)
+        text "▣" at delayed_blink(0.2, 0.75)

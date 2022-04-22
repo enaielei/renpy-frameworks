@@ -1,14 +1,41 @@
 init python in messenger:
     from store import table
 
+    
+    class Status(table.Record):
+        OFFLINE = 0
+        ONLINE = 1
+        TYPING = 2
+
+        uniqueness = [["user", "type"]]
+
+        def __init__(self, user, type):
+            table.Record.__init__(self, user=user, type=type)
+
     class User(table.Record):
         @property
         def conversations(self):
             return tuple(map(lambda m: m.conversation, self.memberships))
 
-        def __init__(self, name, status=None, *conversations):
-            table.Record.__init__(self, name=name, status=status)
+        def __init__(self, name, *conversations, **kwargs):
+            table.Record.__init__(
+                self, name=name,
+                active_membership=kwargs.pop("active_membership", None))
+            self.add_status(*kwargs.pop("statuses", []))
             self.add_conversation(*conversations)
+
+        def status_types(self, **kwargs):
+            return tuple(map(lambda s: s.type, self.statuses(**kwargs)))
+
+        def add_status(self, *statuses):
+            for s in statuses: Status(self, s).create()
+            return self
+        
+        def remove_status(self, *statuses):
+            for s in statuses:
+                st = Status.get_first(user=self, type=s)
+                if st: st.delete()
+            return self
 
         def add_conversation(self, *conversations):
             for c in conversations: Membership(c, self).create()
@@ -32,6 +59,10 @@ init python in messenger:
         def __init__(self, name=None, *members):
             table.Record.__init__(self, name=name)
             self.add_member(*members)
+
+        def members_With_status(self, status, **kwargs):
+            return tuple(filter(
+                lambda m: status in m.status_types(), self.members(**kwargs)))
 
         def members(self, **kwargs):
             return tuple(map(lambda m: m.user, self.memberships(**kwargs)))
@@ -68,6 +99,10 @@ init python in messenger:
                 self, membership=membership,
                 content=content, datetime=datetime, tagged_message=tagged_message)
 
+    Status.relate(User, table.Rel.ONE)
+
+    User.relate(Membership, table.Rel.ONE, "active_membership")
+    User.relate(Status, table.Rel.MANY)
     User.relate(Membership, table.Rel.MANY)
 
     Conversation.relate(Membership, table.Rel.MANY)
@@ -79,6 +114,7 @@ init python in messenger:
     Message.relate(Membership, table.Rel.ONE)
     Message.relate(Message, table.Rel.ONE, "tagged_message")
 
+default _statuses = []
 default _users = []
 default _conversations = []
 default _memberships = []
