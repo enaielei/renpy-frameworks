@@ -15,17 +15,17 @@ init python:
 
 label start:
     python:
-        User("Name 1").create()
-        User("Name 2").create()
-        User("Name 3").create()
+        u1 = User("Star Lord").create()
+        u2 = User("Iron Man").create()
+        u3 = User("Moon Knight").create()
 
-        Conversation("Name 1").create()
-        Conversation("Name 2").create()
-        Conversation("Name 3").create()
+        c1 = Conversation().create()
+        c2 = Conversation("Dynamic Duo").create()
+        c3 = Conversation("Why so serious?").create()
 
-        Membership(Conversation.get_first(), User.get_first()).create()
-        Membership(Conversation.get_first(), User.get()[1]).create()
-        Membership(Conversation.get_first(), User.get()[2]).create()
+        c1.add_members(u1, u2, u3)
+        c2.add_members(u1, u2)
+        c3.add_members(u1, u3)
 
     "Hello World!!!"
     "Hello World!!"

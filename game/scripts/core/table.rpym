@@ -22,11 +22,11 @@ init python in table:
 
         @property
         def created_at(self):
-            return self._created
+            return self._created_at
 
         @property
         def updated_at(self):
-            return self._updated
+            return self._updated_at
 
         @property
         def existing(self):
@@ -49,6 +49,10 @@ init python in table:
 
             self.update(**kwargs)
 
+        def __setattr__(self, name, value):
+            object.__setattr__(self, name, value)
+            object.__setattr__(self, "_updated_at", datetime.now())
+
         def create(self):
             if not self.existing:
                 self._table = self.__class__
@@ -64,7 +68,6 @@ init python in table:
             for k, v in kwargs.items():
                 setattr(self, k, v)
 
-            self._updated_at = datetime.now()
             return self
 
         def delete(self):
@@ -144,17 +147,17 @@ init python in table:
                 setattr(cls, name, property(lambda s: tcls.get(**{id: s.id})))
             elif type == Rel.ONE:
                 name = name or tname
-                pname = "_{}".format(name)
                 tid = target_id_name or "{}_id".format(name)
+                pname = "_{}".format(tid)
                 setattr(cls, name, property(
-                    lambda s: getattr(s, pname, None),
-                    lambda s, v: setattr(s, pname, v) if isinstance(v, tcls) \
-                        else setattr(s, pname, None)
+                    lambda s: tcls.get_first(id=getattr(s, tid)) if getattr(s, tid) \
+                        else None,
+                    lambda s, v: setattr(s, tid, v.id) if isinstance(v, tcls) \
+                        else setattr(s, tid, 0)
                 ))
                 setattr(cls, tid, property(
-                    lambda s: getattr(s, name).id if getattr(s, name, None) \
-                        else 0,
-                    lambda s, v: setattr(s, name, tcls.get(id=v)),
+                    lambda s: getattr(s, pname, 0),
+                    lambda s, v: s.update(**{pname: v}),
                 ))
 
             return cls

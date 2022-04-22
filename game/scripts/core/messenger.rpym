@@ -13,14 +13,14 @@ init python in messenger:
         def add_conversations(self, *conversations):
             cs = self.conversations
             for c in conversations:
-                if c not in cs: Membership(c, self)
+                if c not in cs: Membership(c, self).create()
             
             return self
 
     class Conversation(table.Record):
         @property
         def name(self):
-            p = self.participants
+            p = self.members
             return self._name or ", ".join(map(lambda e: e.name, p))
 
         @name.setter
@@ -28,17 +28,17 @@ init python in messenger:
             self._name = value
 
         @property
-        def participants(self):
+        def members(self):
             return tuple(map(lambda m: m.user, self.memberships))
 
-        def __init__(self, name=None, *participants):
+        def __init__(self, name=None, *members):
             table.Record.__init__(self, name=name)
-            self.add_participants(*participants)
+            self.add_members(*members)
 
-        def add_participants(self, *participants):
-            ps = self.participants
-            for p in participants:
-                if p not in ps: Membership(self, p)
+        def add_members(self, *members):
+            ms = self.members
+            for m in members:
+                if m not in ms: Membership(self, m).create()
             
             return self
 
