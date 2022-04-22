@@ -30,15 +30,15 @@ init python in table:
 
         @property
         def existing(self):
-            if not self.table: return False
-            uniqueness = self.table._uniqueness + getattr(
-                self.table, "uniqueness", [])
+            table = self.__class__
+            uniqueness = table._uniqueness + getattr(
+                table, "uniqueness", [])
             us = map(
                 lambda e: (e,) if not isinstance(e, (list, tuple, set)) \
                     else tuple(e), uniqueness)
             us = ({p: getattr(self, p) for p in pr} for pr in us)
             return any(
-                self.table.get_first(**u) for u in us
+                table.get_first(**u) for u in us
             )
 
         def __init__(self, **kwargs):
@@ -112,28 +112,37 @@ init python in table:
             return cls.get_max_id() + 1
 
         @classmethod
-        def get(cls, *args, **kwargs):
+        def get(cls, **kwargs):
+            _condition = kwargs.pop("_condition", "and")
+            _sort = kwargs.pop("_sort", None)
+            _sort = (_sort,) if isinstance(_sort, basestring) else _sort
+            _sort = (lambda e, n=_sort: [getattr(e, n_, None) for n_ in n]) if isinstance(_sort, (tuple, list, set)) else _sort
+            _reverse = kwargs.pop("_reverse", False)
             name = cls._name or "_{}s".format(cls.__name__.lower())
             all_ = getattr(store, name, [])
 
-            if len(args) > 0 or len(kwargs) > 0:
-                arg = args[0] if len(args) > 0 else None
-
-                if not callable(arg): cond = renpy.partial(
-                    cls._get, kwargs=kwargs, condition=arg)
-                else: cond = arg
+            if len(kwargs) > 0:
+                if not callable(_condition): cond = renpy.partial(
+                    cls._get, kwargs=kwargs, condition=_condition)
+                else: cond = _condition
                 
-                return tuple(filter(cond, all_))
-            return tuple(all_)
+                all_ = filter(cond, all_)
+
+            if callable(_sort):
+                all_ = sorted(all_, key=_sort)
+            if _reverse: all_ = reversed(all_)
+
+            all_ = tuple(all_)
+            return all_
 
         @classmethod
-        def get_first(cls, *args, **kwargs):
-            f = cls.get(*args, **kwargs)
+        def get_first(cls, **kwargs):
+            f = cls.get(**kwargs)
             return f[0] if len(f) > 0 else None
 
         @classmethod
-        def get_last(cls):
-            f = cls.get(*args, **kwargs)
+        def get_last(cls, **kwargs):
+            f = cls.get(**kwargs)
             return f[-1] if len(f) > 0 else None
 
         @classmethod
@@ -144,7 +153,9 @@ init python in table:
             
             if type == Rel.MANY:
                 name = name or tname + "s"
-                setattr(cls, name, property(lambda s: tcls.get(**{id: s.id})))
+                # setattr(cls, name, property(lambda s: tcls.get(**{id: s.id})))
+                setattr(cls, name, lambda s, _sort=None, _reverse=False: \
+                    tcls.get(**{"_sort": _sort, "_reverse": _reverse, id: s.id}))
             elif type == Rel.ONE:
                 name = name or tname
                 tid = target_id_name or "{}_id".format(name)
@@ -157,7 +168,8 @@ init python in table:
                 ))
                 setattr(cls, tid, property(
                     lambda s: getattr(s, pname, 0),
-                    lambda s, v: s.update(**{pname: v}),
+                    lambda s, v: s.update(**{pname: v}) if isinstance(v, int) \
+                        else setattr(s, tid, 0),
                 ))
 
             return cls
@@ -165,7 +177,8 @@ init python in table:
         @classmethod
         def _get(cls, record, kwargs, condition=None):
             condition = "and" if condition is None else condition.lower()
-            ev = (getattr(record, k) == v if hasattr(record, k) else False \
+            ev = ((getattr(record, k) == v if not callable(v) else v(getattr(record, k))) \
+                if hasattr(record, k) else False \
                 for k, v in kwargs.items())
             return all(ev) if condition == "and" else (
                 any(ev) if condition == "or" else False

@@ -8,48 +8,65 @@ init python in messenger:
 
         def __init__(self, name, status=None, *conversations):
             table.Record.__init__(self, name=name, status=status)
-            self.add_conversations(*conversations)
+            self.add_conversation(*conversations)
 
-        def add_conversations(self, *conversations):
-            cs = self.conversations
-            for c in conversations:
-                if c not in cs: Membership(c, self).create()
-            
+        def add_conversation(self, *conversations):
+            for c in conversations: Membership(c, self).create()
+            return self
+
+        def add_message(self, conversation, *args, **kwargs):
+            mem = Membership.get_first(conversation=conversation, user=self)
+            if mem: mem.add_message(*args, **kwargs)
             return self
 
     class Conversation(table.Record):
         @property
         def name(self):
-            p = self.members
+            p = self.members()
             return self._name or ", ".join(map(lambda e: e.name, p))
 
         @name.setter
         def name(self, value):
             self._name = value
 
-        @property
-        def members(self):
-            return tuple(map(lambda m: m.user, self.memberships))
-
         def __init__(self, name=None, *members):
             table.Record.__init__(self, name=name)
-            self.add_members(*members)
+            self.add_member(*members)
 
-        def add_members(self, *members):
-            ms = self.members
-            for m in members:
-                if m not in ms: Membership(self, m).create()
-            
+        def members(self, **kwargs):
+            return tuple(map(lambda m: m.user, self.memberships(**kwargs)))
+
+        def messages(self, **kwargs):
+            mems = self.memberships()
+            return Message.get(membership=lambda m: m in mems, **kwargs)
+
+        def add_member(self, *members):
+            for m in members: Membership(self, m).create()
+            return self
+
+        def add_message(self, user, *args, **kwargs):
+            mem = Membership.get_first(conversation=self, user=user)
+            if mem: mem.add_message(*args, **kwargs)
             return self
 
     class Membership(table.Record):
+        uniqueness = [["conversation", "user"]]
+
         def __init__(self, conversation, user):
             table.Record.__init__(self, conversation=conversation, user=user)
 
+        def add_message(self, *args, **kwargs):
+            Message(self, *args, **kwargs).create()
+            return self
+
     class Message(table.Record):
-        def __init__(self, conversation, user, content):
+        @property
+        def sender(self): return self.membership.user if self.membership else None
+
+        def __init__(self, membership, content, datetime=None, tagged_message=None):
             table.Record.__init__(
-                self, conversation=conversation, user=user, content=content)
+                self, membership=membership,
+                content=content, datetime=datetime, tagged_message=tagged_message)
 
     User.relate(Membership, table.Rel.MANY)
 
@@ -57,7 +74,12 @@ init python in messenger:
 
     Membership.relate(Conversation, table.Rel.ONE)
     Membership.relate(User, table.Rel.ONE)
+    Membership.relate(Message, table.Rel.MANY)
+
+    Message.relate(Membership, table.Rel.ONE)
+    Message.relate(Message, table.Rel.ONE, "tagged_message")
 
 default _users = []
 default _conversations = []
 default _memberships = []
+default _messages = []
