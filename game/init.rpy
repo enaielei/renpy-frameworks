@@ -1,9 +1,9 @@
 init python hide:
-    store._modules = []
+    store._modules = ()
     try:
         with renpy.file("modules.json") as file:
             import json
-            store._modules = json.load(file)
+            store._modules = tuple(json.load(file))
     except:
         pass
     
