@@ -1,0 +1,175 @@
+init python in utils:
+    import store
+    from datetime import datetime
+
+    store.renpy.load_module("scripts/utils/helper")
+
+    class RecordMeta(type):
+        def __new__(self, name, bases, attrs):
+            attrs["_one"] = {}
+            attrs["_many"] = {}
+            cls = type.__new__(self, name, bases, attrs)
+            return cls
+
+        def __getitem__(self, index):
+            try: return self._all()[index]
+            except: pass
+
+        @property
+        def all(self): return tuple(self._all())
+
+        @property
+        def max_id(self):
+            m = max(self._all(), default=None, key=lambda e: e.id)
+            id = -1 if not m else m.id
+            return id
+
+        @property
+        def min_id(self):
+            m = min(self._all(), default=None, key=lambda e: e.id)
+            id = -1 if not m else m.id
+            return id
+
+        @property
+        def first(self):
+            return self[0]
+
+        @property
+        def last(self):
+            return self[-1]
+
+    class Record(metaclass=RecordMeta):
+        @property
+        def id(self):
+            return self._id
+
+        @property
+        def datetime_created(self):
+            return self._datetime_created
+
+        @property
+        def created(self):
+            return self.id != -1
+
+        def __init__(self):
+            self._id = -1
+            self._datetime_created = None
+
+        def create(self):
+            if self.created: return self
+
+            cls = self.__class__
+            id = cls.max_id + 1
+            cls._all().append(self)
+            self._id = id
+            self._datetime_created = datetime.now()
+            return self
+
+        def update(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+            return self
+
+        def delete(self):
+            cls = self.__class__
+            i = helper.index(lambda e: e.id == self.id, cls._all())
+            if i != -1:
+                e = cls._all()[i]
+                
+                # Remove any references
+                for c, n in cls._one.items():
+                    c.update_by({n: None}, lambda i: getattr(i, n, None) == e)
+
+                e._id = -1
+                e._datetime_created = None
+                cls._all().pop(i)
+
+            return self
+
+        @classmethod
+        def create_by(cls, *args, **kwargs):
+            return cls(*args, **kwargs).create()
+
+        @classmethod
+        def update_by(cls, kwargs, condition=None):
+            return cls._operate_by(lambda e: e.update(**kwargs), condition)
+
+        @classmethod
+        def delete_by(cls, condition=None):
+            return cls._operate_by(lambda e: e.delete(), condition)
+
+        @classmethod
+        def get(cls, condition=None):
+            if not callable(condition): condition = lambda e: True
+            return helper.find(condition, cls._all())
+
+        @classmethod
+        def get_all(cls, condition=None):
+            if not callable(condition): condition = lambda e: True
+            return tuple(filter(condition, cls._all()))
+
+        @classmethod
+        def has_one(cls, other, one_name=None):
+            return cls._has_one(other, one_name)
+
+        @classmethod
+        def has_many(cls, other, one_name=None, many_name=None):
+            return cls._has_many(other, one_name, many_name)
+
+        @classmethod
+        def _operate_by(cls, operation, condition=None):
+            if not callable(condition): condition = lambda e: True
+            for e in cls._all():
+                if condition(e): operation(e)
+
+            return cls
+        
+        @classmethod
+        def _has_one(cls, other, one_name=None):
+            if not issubclass(other, Record) or cls is other: return cls
+
+            one_name = one_name or other.__name__.lower()
+
+            # has_one
+            other._one[cls] = one_name
+            setattr(cls, one_name, property(
+                store.renpy.partial(other._get_one, name=one_name),
+                store.renpy.partial(other._set_one, name=one_name)
+            ))
+
+            return cls
+        
+        @classmethod
+        def _has_many(cls, other, one_name=None, many_name=None):
+            if not issubclass(other, Record) or cls is other: return cls
+
+            one_name = one_name or cls.__name__.lower()
+            many_name = many_name or (other.__name__.lower() + "s")
+
+            # has_many
+            other._many[cls] = many_name
+            setattr(cls, many_name, property(
+                store.renpy.partial(other._get_many, name=one_name)
+            ))
+
+            return cls
+
+        @classmethod
+        def _get_one(cls, self, name):
+            name = "_{}_id".format(name)
+            id = helper.ensureattr(self, name, -1)
+            return cls.get(lambda e: e.id == id)
+
+        @classmethod
+        def _set_one(cls, self, value, name):
+            setattr(self, "_{}_id".format(name), value.id if value else -1)
+
+        @classmethod
+        def _get_many(cls, self, name):
+            return cls.get_all(
+                lambda e: getattr(e, name, None) and getattr(e, name).id == self.id)
+
+        @classmethod
+        def _all(cls):
+            return helper.ensureattr(store.renpy.eval(cls.__module__), "_{}_all".format(
+                cls.__name__.lower()), [])

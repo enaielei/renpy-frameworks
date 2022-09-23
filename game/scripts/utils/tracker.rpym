@@ -1,0 +1,49 @@
+init python in utils:
+    import store
+
+    def _tracker(tr, st, at, interval=0):
+        renpy, config = store.renpy, store.config
+
+        ssize = (config.screen_width, config.screen_height)
+        csize = tr.child_size
+        mpos = renpy.get_mouse_pos()
+        
+        x, y = renpy.display.core.place(
+            ssize[0], ssize[1], csize[0], csize[1], tr.child.get_placement())
+        bounds = [
+            mpos[0] + x,
+            mpos[1] + y,
+            csize[0], csize[1]
+        ]
+
+        pos = list(mpos)
+        left, right = bounds[0], bounds[0] + bounds[2]
+        top, bottom = bounds[1], bounds[1] + bounds[3]
+
+        if left < 0:
+            pos[0] = int(pos[0] - left)
+        if right > ssize[0]:
+            pos[0] = int(pos[0] - (right - ssize[0]))
+        if top < 0:
+            pos[1] = int(pos[1] - top)
+        if bottom > ssize[1]:
+            pos[1] = int(pos[1] - (bottom - ssize[1]))
+
+        tr.pos = pos
+
+        return interval
+
+    def Tracker(child=None, interval=0, *args, **kwargs):
+        return store.Transform(
+            child, store.renpy.partial(
+                _tracker, interval=interval
+            ), *args, **kwargs
+        )
+
+init:
+    transform tracker(interval=0):
+        function store.renpy.partial(utils._tracker, interval=interval)
+    
+    python:
+        utils.tracker = tracker
+        del tracker

@@ -1,0 +1,135 @@
+init python:
+    import math
+
+init python in utils.helper:
+    import store, os, sys, io
+    from store import utils
+    from store import renpy, Movie
+    from pprint import pprint
+
+    _print = print
+
+    def print(*args, **kwargs):
+        stream = io.StringIO()
+        sep = kwargs.pop("sep", "\n")
+        strs = []
+        for a in args:
+            stream.truncate(0)
+            stream.seek(0)
+            pprint(a, stream, **kwargs)
+            strs.append(stream.getvalue()[:-1])
+
+        _print(*strs, sep=sep)
+
+    def list_files(directory, common=False):
+        directory = directory.rstrip('/') + '/'
+        return tuple(fp for fp in renpy.list_files(common) if fp.startswith(directory))
+
+    def _do_files(action, filepaths, callback=None, extensions=[]):
+        extensions = [ext.lower() for ext in extensions]
+        for fn in filepaths:
+            di, basename = os.path.split(fn)
+            base, ext = os.path.splitext(basename)
+
+            if not ext.lower() in extensions:
+                continue
+
+            name = fn.removesuffix(ext).replace("/", " ").replace(".", " ").lower()
+            if callable(callback): name = callback(name)
+
+            action(fn, di, basename, base, ext, name)
+
+    def _define_images(filepath, dir, basename, base, extension, name):
+        renpy.image(name, filepath)
+        print(dict(define_image=dict(name=name, filepath=filepath)))
+
+    def _define_videos(filepath, dir, basename, base, extension, name):
+        kwargs = {}
+        exp = "{}/{}.json".format(dir, basename)
+        imp = "{}/{}.json".format(dir, base)
+
+        if renpy.loadable(exp): pt = exp
+        elif renpy.loadable(imp): pt = imp
+        else: pt = None
+
+        if pt is not None:
+            with renpy.file(pt) as file:
+                import json
+                kwargs = dict(json.load(file))
+
+            kwargs = {k: renpy.eval(v) for k, v in kwargs.items()}
+
+        renpy.image(name, Movie(play=fn, **kwargs))
+        print(dict(define_video=dict(name=name, filepath=filepath)))
+
+    def _define_animations(filepath, dir, basename, base, extension, name, extensions, frames, props):
+        di, basename = os.path.split(dir)
+        base, ext = os.path.splitext(basename)
+
+        if not ext.lower() in extensions:
+            return
+
+        aname = dir.removesuffix(ext).replace("/", " ").lower()
+        if aname not in frames: frames[aname] = []
+        frames[aname].append(filepath)
+        
+        if aname not in props:
+            props[aname] = {}
+            f = "{}/.json".format(dir)
+            if not renpy.loadable(f): return
+            with renpy.file(f) as file:
+                import json
+                kwargs = dict(json.load(file))
+                kwargs = {k: renpy.eval(v) for k, v in kwargs.items()}
+                props[aname].update(kwargs)
+
+    def define_images(filepaths, callback=None, extensions=[".jpg", ".jpeg", ".png", ".webp"]):
+        _do_files(_define_images, filepaths, callback, extensions)
+
+    def define_videos(filepaths, callback=None, extensions=[".avi", ".webm", ".mkv", ".ogg"]):
+        _do_files(_define_videos, filepaths, callback, extensions)
+
+    def define_animations(filepaths, callback=None, extensions=[".animation", ".anim"], frame_extensions=[".jpg", ".jpeg", ".png", ".webp"]):
+        frames, props = {}, {}
+        _do_files(renpy.partial(_define_animations, extensions=extensions, frames=frames, props=props), filepaths, callback, frame_extensions)
+        
+        for name, frms in frames.items():
+            renpy.image(name, Animation(frms, **props[name]))
+            print(dict(define_animation=dict(name=name, frames=frms, props=props[name])))
+
+    def unpack(dct, *keys, **kwargs):
+        if "default" in kwargs: default = kwargs.pop("default")
+        return (dct.get(k, default) for k in keys)
+
+    def find(condition, iterable, default=None):
+        return next(filter(condition, iterable), default)
+
+    def index(condition, iterable, default=-1):
+        return find(lambda e: condition(e[1]), enumerate(iterable), (-1,))[0]
+
+    def ensureattr(obj, name, default=None):
+        if not hasattr(obj, name): setattr(obj, name, default)
+        return getattr(obj, name)
+
+    def ensurekey(dct, name, default=None):
+        if name not in dct: dct[name] = default
+        return dct[name]
+
+    def screen_get(screen, name, value, default=None, layer=None):
+        if isinstance(screen, basestring):
+            screen = renpy.get_screen(screen, layer)
+
+        return screen.scope[name] if screen else default
+
+    def screen_set(screen, name, value, layer=None):
+        if isinstance(screen, basestring):
+            screen = renpy.get_screen(screen, layer)
+
+        if screen: screen.scope[name] = value
+        # if screen: sys._getframe(1).f_locals[name] = value
+
+    def ScreenGet(screen, name, value, default=None, layer=None):
+        return store.Function(screen_get, screen, name, value, default, layer)
+
+    def ScreenSet(screen, name, value, layer=None):
+        return store.Function(screen_set, screen, name, value, layer)

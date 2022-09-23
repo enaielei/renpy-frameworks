@@ -1,0 +1,56 @@
+init python in utils:
+    import store
+    
+    renpy.load_module("scripts/utils/record")
+
+    class Episode(Record):
+        PREFIX = "ep"
+        BEGINNING = "beginning"
+        ENDING = "ending"
+
+        current = None
+
+        @property
+        def tag(self): return "{}{}".format(self.__class__.PREFIX, self.number)
+
+        @property
+        def number(self): return self.id + 1
+
+        @property
+        def beginning(self):
+            l = "{}_{}".format(self.tag, self.__class__.BEGINNING)
+            return l if store.renpy.has_label(l) else ""
+
+        @property
+        def ending(self):
+            l = "{}_{}".format(self.tag, self.__class__.ENDING)
+            return l if store.renpy.has_label(l) else ""
+
+        @property
+        def played(self):
+            return store.renpy.seen_label(self.beginning) and \
+                store.renpy.seen_label(self.ending)
+
+        def __init__(self, title, description="", displayable=None):
+            Record.__init__(self)
+
+            self.title = title
+            self.description = description
+            self.displayable = displayable
+
+        def play(self):
+            if self.beginning: store.renpy.run(store.Start(self.beginning))
+
+        def Play(self):
+            return store.Function(self.play)
+
+        @classmethod
+        def initialize(cls):
+            config = store.config
+
+            ocb = config.label_callback
+            def cb(name, flag):
+                if ocb: ocb(name, flag)
+                tag, _, _ = name.partition("_")
+                cls.current = cls.get(lambda e: e.tag == tag)
+            config.label_callback = cb

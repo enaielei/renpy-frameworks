@@ -1,0 +1,41 @@
+init python in utils:
+    import store
+
+    renpy.load_module("scripts/utils/record")
+
+    class Persona(Record):
+        @property
+        def character(self):
+            return self._character
+
+        @character.setter
+        def character(self, value):
+            self._character = value
+            if value is not None:
+                value.name = self
+
+        def __init__(self, name=None, image=None, character=None):
+            Record.__init__(self)
+            self.name = name or ""
+            self.image = image or store.Null()
+            self.character = character
+
+        def __str__(self):
+            return self.name
+
+        def __call__(self):
+            return str(self)
+
+        @classmethod
+        def initialize(cls, name=None):
+            config = store.config
+
+            ocb = config.say_arguments_callback
+            name = name or cls.__name__.lower()
+            def cb(who, interact=True, *args, **kwargs):
+                if ocb:
+                    args, kwargs = ocb(who, interact, *args, **kwargs)
+                kwargs["show_{}".format(name)] = cls.get(
+                    lambda e: e.character == who)
+                return args, kwargs
+            config.say_arguments_callback = cb

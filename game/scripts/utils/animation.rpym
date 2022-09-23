@@ -1,0 +1,11 @@
+init python in utils:
+    import store
+
+    def _animation(st, at, frames=[], interval=0.03):
+        frame_count = len(frames)
+        frame = int((st // interval) % frame_count)
+
+        return frames[frame], interval
+
+    def Animation(frames, interval=0.03):
+        return store.DynamicDisplayable(_animation, frames=frames, interval=interval)
