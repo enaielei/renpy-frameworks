@@ -44,10 +44,10 @@ init python in utils:
             for fp in self._images:
                 dir, basename = os.path.split(fp)
                 _, ext = os.path.splitext(dir)
+                fp_ = fp
                 if ext in self.animations:
                     fp_ = dir.removesuffix(ext) + "/" + basename
 
-                fp_ = fp
                 if callable(callback): fp_ = callback(fp_)
                 name = self.get_name(fp_)
                 
