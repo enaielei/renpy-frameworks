@@ -1,0 +1,151 @@
+init python in utils:
+    import store, os
+    from store import renpy, Movie
+
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/animation")
+
+    class Definer():
+        IMAGES = ('.jpeg', '.jpg', '.png', '.webp')
+        ANIMATIONS = ('.anim', '.animation')
+        VIDEOS = ('.avi', '.mkv', '.ogg', '.webm')
+
+        def __init__(self, images=None, animations=None, videos=None):
+            self.images = images or self.__class__.IMAGES
+            self.animations = animations or self.__class__.ANIMATIONS
+            self.videos = videos or self.__class__.VIDEOS
+
+            self._images = []
+            self._animations = []
+            self._videos = []
+
+            self._definitions = []
+
+        def _scan(self, lst, extensions, filepaths):
+            for fp in filepaths:
+                base, ext = os.path.splitext(fp)
+                if ext in extensions and fp not in lst: lst.append(fp)
+
+            return self
+
+        def scan_images(self, directory="", common=False, recursive=True):
+            return self._scan(self._images, self.images,
+                helper.list_files(directory, common, recursive))
+
+        def scan_animations(self, directory="", common=False, recursive=True):
+            return self._scan(self._animations, self.animations,
+                helper.list_directories(directory, common, recursive))
+
+        def scan_videos(self, directory="", common=False, recursive=True):
+            return self._scan(self._videos, self.videos,
+                helper.list_files(directory, common, recursive))
+
+        def define_images(self, callback=None):
+            for fp in self._images:
+                dir, basename = os.path.split(fp)
+                _, ext = os.path.splitext(dir)
+                if ext in self.animations:
+                    fp_ = dir.removesuffix(ext) + "/" + basename
+
+                if callable(callback): fp_ = callback(fp_)
+                name = self.get_name(fp_)
+                
+                renpy.image(name, fp)
+                self._definitions.append(name)
+                
+                print("[define_image] name: '{}', path: '{}'".format(name, fp))
+
+            return self
+
+        def define_animations(self, callback=None):
+            for fp in self._animations:
+                frames = []
+                self._scan(frames, self.images,
+                    helper.list_files(fp, recursive=False))
+
+                for i in range(len(frames)):
+                    frame = frames[i]
+                    fname = self.get_name(frame)
+                    if fname not in self._definitions: fname = frame
+                    frames[i] = fname
+                
+                props = {}
+                _json = "{}/.json".format(fp)
+                if renpy.loadable(_json): props = self._read_props(_json)
+
+                fp_ = fp
+                if callable(callback): fp_ = callback(fp_)
+                name = self.get_name(fp_)
+
+                renpy.image(name, Animation(frames, **props))
+                self._definitions.append(name)
+
+                print("[define_animation] name: '{}', path: '{}', frames: {}".format(name, fp, len(frames)))
+
+            return self
+
+        def define_videos(self, callback=None):
+            for fp in self._videos:
+                dir, basename, base, ext = self._process_filepath(fp)
+
+                exp = "{}/{}.json".format(dir, basename)
+                imp = "{}/{}.json".format(dir, base)
+
+                if renpy.loadable(exp): _json = exp
+                elif renpy.loadable(imp): _json = imp
+                else: _json = ""
+
+                props = {}
+                if renpy.loadable(_json): props = self._read_props(_json)
+
+                fp_ = fp
+                if callable(callback): fp_ = callback(fp_)
+                name = self.get_name(fp_)
+
+                renpy.image(name, Movie(play=fp, **props))
+
+                print("[define_video] name: '{}', path: '{}'".format(name, fp))
+
+            return self
+
+        def clear_images(self):
+            self._images.clear()
+            return self
+
+        def clear_animations(self):
+            self._animations.clear()
+            return self
+
+        def clear_videos(self):
+            self._videos.clear()
+            return self
+
+        def clear(self):
+            self.clear_images()
+            self.clear_animations()
+            self.clear_videos()
+            return self
+
+        def define(self, callback=None):
+            self.define_images(callback)
+            self.define_animations(callback)
+            self.define_videos(callback)
+            return self
+
+        def get_name(self, filepath, extension=None):
+            if not extension: _, extension = os.path.splitext(filepath)
+            return filepath.removesuffix(extension).replace("/", " ")\
+                .replace(".", " ").lower()
+
+        def _process_filepath(self, filepath):
+            dir, basename = os.path.split(filepath)
+            base, ext = os.path.splitext(basename)
+
+            return (dir, basename, base, ext)
+
+        def _read_props(self, filepath):
+            with renpy.file(filepath) as file:
+                props = dict(json.load(file))
+                props = {k: renpy.eval(v) for k, v in props.items()}
+
+            return props
