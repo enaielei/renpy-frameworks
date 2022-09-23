@@ -1,5 +1,5 @@
 init python in utils:
-    import store, os
+    import store, os, json
     from store import renpy, Movie
 
     renpy.load_module("scripts/utils/helper")
