@@ -62,7 +62,9 @@ init python in utils.helper:
         renpy.image(name, Movie(play=fn, **kwargs))
         print(dict(define_video=dict(name=name, filepath=filepath)))
 
-    def _define_animations(filepath, dir, basename, base, extension, name, extensions, frames, props):
+    def _define_animations(filepath, dir, basename, base, extension, name,
+        extensions, frames, props
+    ):
         di, basename = os.path.split(dir)
         base, ext = os.path.splitext(basename)
 
@@ -83,19 +85,29 @@ init python in utils.helper:
                 kwargs = {k: renpy.eval(v) for k, v in kwargs.items()}
                 props[aname].update(kwargs)
 
-    def define_images(filepaths, callback=None, extensions=[".jpg", ".jpeg", ".png", ".webp"]):
+    def define_images(filepaths, callback=None,
+        extensions=[".jpg", ".jpeg", ".png", ".webp"]
+    ):
         _do_files(_define_images, filepaths, callback, extensions)
 
-    def define_videos(filepaths, callback=None, extensions=[".avi", ".webm", ".mkv", ".ogg"]):
+    def define_videos(filepaths, callback=None,
+        extensions=[".avi", ".webm", ".mkv", ".ogg"]
+    ):
         _do_files(_define_videos, filepaths, callback, extensions)
 
-    def define_animations(filepaths, callback=None, extensions=[".animation", ".anim"], frame_extensions=[".jpg", ".jpeg", ".png", ".webp"]):
+    def define_animations(filepaths, callback=None,
+        extensions=[".animation", ".anim"],
+        frame_extensions=[".jpg", ".jpeg", ".png", ".webp"]
+    ):
         frames, props = {}, {}
-        _do_files(renpy.partial(_define_animations, extensions=extensions, frames=frames, props=props), filepaths, callback, frame_extensions)
+        _do_files(renpy.partial(
+            _define_animations, extensions=extensions, frames=frames, props=props
+        ), filepaths, callback, frame_extensions)
         
         for name, frms in frames.items():
             renpy.image(name, Animation(frms, **props[name]))
-            print(dict(define_animation=dict(name=name, frames=frms, props=props[name])))
+            print(dict(define_animation=dict(
+                name=name, frames=frms, props=props[name])))
 
     def unpack(dct, *keys, **kwargs):
         if "default" in kwargs: default = kwargs.pop("default")
