@@ -47,6 +47,7 @@ init python in utils:
                 if ext in self.animations:
                     fp_ = dir.removesuffix(ext) + "/" + basename
 
+                fp_ = fp
                 if callable(callback): fp_ = callback(fp_)
                 name = self.get_name(fp_)
                 
