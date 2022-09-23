@@ -3,6 +3,11 @@ init python in utils:
 
     def _animation(st, at, frames=[], interval=0.03):
         frame_count = len(frames)
+
+        if isinstance(interval, basestring):
+            interval = store.renpy.eval(interval)
+        elif callable(interval): interval = interval(frame_count)
+
         frame = int((st // interval) % frame_count)
 
         return frames[frame], interval
