@@ -3,14 +3,17 @@ init python in utils:
     from store import renpy, Movie
 
     renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/base")
     renpy.load_module("scripts/utils/animation")
 
-    class Definer():
+    class Definer(Base):
         IMAGES = ('.jpeg', '.jpg', '.png', '.webp')
         ANIMATIONS = ('.anim', '.animation')
         VIDEOS = ('.avi', '.mkv', '.ogg', '.webm')
 
         def __init__(self, images=None, animations=None, videos=None):
+            Base.__init__(self)
+
             self.images = images or self.__class__.IMAGES
             self.animations = animations or self.__class__.ANIMATIONS
             self.videos = videos or self.__class__.VIDEOS
