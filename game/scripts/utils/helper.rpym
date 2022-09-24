@@ -76,3 +76,23 @@ init python in utils.helper:
 
     def ScreenSet(screen, name, value, layer=None):
         return store.Function(screen_set, screen, name, value, layer)
+
+    def Action(method):
+        def _Action(self, *args, **kwargs):
+            name = getattr(self, method)
+            return store.Function(name, *args, **kwargs)
+
+        return _Action
+
+    def action(function):
+        setattr(function, "Action", Action(function.__name__))
+        return function
+
+    def set_action(cls, *names):
+        from functools import partial
+        for name in names:
+            if isinstance(name, (tuple, list, set)):
+                name, aname = name
+            else: aname = name.title()
+
+            setattr(cls, aname, Action(name))
