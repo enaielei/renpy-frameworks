@@ -1,0 +1,16 @@
+init python in utils:
+    import store
+
+    class BaseMeta(type):
+        def __new__(cls, name, bases, attrs):
+            for k, v in tuple(attrs.items()):
+                if callable(v):
+                    Action = getattr(v, "Action", None)
+                    name = "".join(s.title() for s in k.split("_"))
+                    if Action is not None and name not in attrs:
+                        attrs[name] = Action
+
+            return type.__new__(cls, name, bases, attrs)
+
+    class Base(metaclass=BaseMeta):
+        pass
