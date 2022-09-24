@@ -13,4 +13,5 @@ init python in utils:
             return type.__new__(cls, name, bases, attrs)
 
     class Base(metaclass=BaseMeta):
-        pass
+        def __init__(self):
+            pass
