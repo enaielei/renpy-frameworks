@@ -6,9 +6,10 @@ init python in utils:
     store.renpy.load_module("scripts/utils/base")
 
     class RecordMeta(BaseMeta):
-        def __new__(cls, name, bases, attrs):
+        def __new__(cls, name, bases, attrs, uniques=None):
             attrs["_one"] = {}
             attrs["_many"] = {}
+            attrs["_uniques"] = uniques or []
             return type.__new__(cls, name, bases, attrs)
 
         def __getitem__(cls, index):
@@ -57,19 +58,43 @@ init python in utils:
             self._id = -1
             self._datetime_created = None
 
+        def on_create(self):
+            pass
+
+        def on_update(self):
+            pass
+
+        def on_delete(self):
+            pass
+
         def create(self):
             if self.created: return self
 
             cls = self.__class__
             id = cls.max_id + 1
-            cls._all().append(self)
+
+            # Check for existing
+            uniques = self.__class__._uniques
+            for unique in uniques:
+                values = {p: getattr(self, p) for p in unique}
+                one = self.__class__.get(
+                    lambda e: all(getattr(e, k) == v for k, v in values.items()))
+                if one:
+                    print("[{}.create] Record is existing.".format(self.__class__.__name__))
+                    return self
+
             self._id = id
             self._datetime_created = datetime.now()
+            cls._all().append(self)
+            self.on_create()
+
             return self
 
         def update(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
+
+            self.on_update()
             return self
 
         def delete(self):
@@ -85,6 +110,7 @@ init python in utils:
                 e._id = -1
                 e._datetime_created = None
                 cls._all().pop(i)
+                self.on_delete()
 
             return self
 
