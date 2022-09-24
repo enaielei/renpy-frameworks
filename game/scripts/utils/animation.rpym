@@ -1,16 +1,169 @@
 init python in utils:
-    import store
+    import store, math
 
-    def _animation(st, at, frames=[], interval=0.03):
-        frame_count = len(frames)
+    store.renpy.load_module("scripts/utils/base")
 
-        if isinstance(interval, basestring):
-            interval = store.renpy.eval(interval)
-        elif callable(interval): interval = interval(frame_count)
+    class Animation(Base, store.DynamicDisplayable):
+        @property
+        def fps(self):
+            fps = self._fps
+            if isinstance(fps, basestring): fps = store.renpy.eval(fps)
+            elif callable(fps): fps = fps()
+            fps = max(fps, 0)
+            return fps
 
-        frame = int((st // interval) % frame_count)
+        @fps.setter
+        def fps(self, value):
+            self._fps = value
 
-        return frames[frame], interval
+        @property
+        def speed(self):
+            speed = self._speed
+            if isinstance(speed, basestring): speed = store.renpy.eval(speed)
+            elif callable(speed): speed = speed()
+            speed = max(speed, 0)
+            return speed
 
-    def Animation(frames, interval=0.03):
-        return store.DynamicDisplayable(_animation, frames=frames, interval=interval)
+        @speed.setter
+        def speed(self, value):
+            self._speed = max(value, 0)
+
+        @property
+        def interval(self):
+            if self.paused or not self.fps or not self.speed: return None
+            return (1 / float(self.fps)) / float(self.speed)
+
+        @property
+        def frame(self):
+            return self._frame
+
+        @frame.setter
+        def frame(self, value):
+            self._frame = min(max(value, 0), len(self.frames) - 1)
+
+        @property
+        def direction(self):
+            direction = self._direction
+            if isinstance(direction, basestring):
+                direction = store.renpy.eval(direction)
+            elif callable(direction): direction = direction()
+            if direction not in (-1, 1): direction = 1
+            return direction
+
+        @direction.setter
+        def direction(self, value):
+            self._direction = value
+
+        @property
+        def progress(self):
+            return self.frame / float(len(self.frames) - 1)
+
+        @progress.setter
+        def progress(self, value):
+            frame = round((len(self.frames) - 1) * value)
+            self.frame = frame
+
+        @property
+        def paused(self):
+            paused = self._paused
+            if isinstance(paused, basestring):
+                paused = store.renpy.eval(paused)
+            elif callable(paused): paused = paused()
+            paused = bool(paused)
+            return paused
+
+        def __init__(self, frames, fps=30, speed=1.0, direction=1, paused=False, callback=None):
+            Base.__init__(self)
+            store.DynamicDisplayable.__init__(self, self._animation)
+
+            self.frames = frames
+            self.fps = fps
+            self.speed = speed
+            self.direction = direction
+            self._paused = paused
+            self.callback = callback
+
+            self.frame = 0
+
+            self._last_paused = None
+
+        def __getitem__(self, index):
+            if isinstance(index, float): index = round((len(self.frames) - 1) * index)
+            return self.frames[index]
+
+        def _animation(self, st, at):
+            frames = self.frames
+            frame_count = len(frames)
+
+            interval = self.interval
+
+            frame = self.frame
+            if callable(self.callback): self.callback(self.progress)
+
+            if interval is not None:
+                if self.direction == 1 and frame == len(self.frames) - 1:
+                    self.frame = 0
+                elif self.direction == -1 and frame == 0:
+                    self.frame = len(self.frames) - 1
+
+                self.frame += self.direction
+
+            interval = 0 if interval is None and self.paused else interval
+            return frames[frame], interval
+
+        def clone(self, **kwargs):
+            props = dict(
+                frames=self.frames,
+                fps=self._fps,
+                speed=self._speed,
+                direction=self._direction,
+                paused=self._paused,
+                callback=self.callback,
+            )
+            props.update(kwargs)
+            return self.__class__(**props)
+        
+        @helper.action
+        def pause(self):
+            if self.paused: return
+            self._last_paused = self._paused
+            self._paused = True
+
+        @helper.action
+        def resume(self):
+            if not self.paused: return
+            self._paused = self._last_paused
+
+        @helper.action
+        def play(self, frame=0):
+            if isinstance(frame, float): self.progress = frame
+            else: self.frame = frame
+
+        @helper.action
+        def toggle_pause(self):
+            if self.paused: self.resume()
+            else: self.pause()
+
+        @helper.action
+        def skip(self, frames=1):
+            self.frame += frames
+
+        @helper.action
+        def pace(self, value=0.10):
+            self.speed += value
+
+        @helper.action
+        def direct(self, direction=1):
+            self.direction = direction
+
+        @helper.action
+        def toggle_direction(self):
+            if self.direction == 1: self.direct(-1)
+            else: self.direct(1)
+        
+        @classmethod
+        def get(cls, name, **kwargs):
+            anim = renpy.get_registered_image(name)
+            if isinstance(anim, cls):
+                return anim.clone(**kwargs)
+
