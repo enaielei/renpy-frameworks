@@ -164,7 +164,7 @@ init python in utils:
 
         @classmethod
         def _set_one(cls, self, value, name):
-            setattr(self, "_{}_id".format(name), value.id if value else -1)
+            setattr(self, "_{}_id".format(name), value.id if value and isinstance(value, cls) else -1)
 
         @classmethod
         def _get_many(cls, self, name):
