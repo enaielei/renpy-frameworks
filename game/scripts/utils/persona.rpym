@@ -16,8 +16,8 @@ init python in utils:
 
         def __init__(self, name=None, image=None, character=None):
             Record.__init__(self)
-            self.name = name or ""
-            self.image = image or store.Null()
+            self.name = name
+            self.image = image
             self.character = character
 
         def __str__(self):
