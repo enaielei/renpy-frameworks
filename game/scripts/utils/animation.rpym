@@ -113,7 +113,7 @@ init python in utils:
 
         def clone(self, **kwargs):
             props = dict(
-                frames=self.frames,
+                frames=self.frames.copy(),
                 fps=self._fps,
                 speed=self._speed,
                 direction=self._direction,
