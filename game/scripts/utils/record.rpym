@@ -3,42 +3,42 @@ init python in utils:
     from datetime import datetime
 
     store.renpy.load_module("scripts/utils/helper")
+    store.renpy.load_module("scripts/utils/base")
 
-    class RecordMeta(type):
-        def __new__(self, name, bases, attrs):
+    class RecordMeta(BaseMeta):
+        def __new__(cls, name, bases, attrs):
             attrs["_one"] = {}
             attrs["_many"] = {}
-            cls = type.__new__(self, name, bases, attrs)
-            return cls
+            return BaseMeta.__new__(cls, name, bases, attrs)
 
-        def __getitem__(self, index):
-            try: return self._all()[index]
+        def __getitem__(cls, index):
+            try: return cls._all()[index]
             except: pass
 
         @property
-        def all(self): return tuple(self._all())
+        def all(cls): return tuple(cls._all())
 
         @property
-        def max_id(self):
-            m = max(self._all(), default=None, key=lambda e: e.id)
+        def max_id(cls):
+            m = max(cls._all(), default=None, key=lambda e: e.id)
             id = -1 if not m else m.id
             return id
 
         @property
-        def min_id(self):
-            m = min(self._all(), default=None, key=lambda e: e.id)
+        def min_id(cls):
+            m = min(cls._all(), default=None, key=lambda e: e.id)
             id = -1 if not m else m.id
             return id
 
         @property
-        def first(self):
-            return self[0]
+        def first(cls):
+            return cls[0]
 
         @property
-        def last(self):
-            return self[-1]
+        def last(cls):
+            return cls[-1]
 
-    class Record(metaclass=RecordMeta):
+    class Record(Base, metaclass=RecordMeta):
         @property
         def id(self):
             return self._id
@@ -52,6 +52,8 @@ init python in utils:
             return self.id != -1
 
         def __init__(self):
+            Base.__init__(self)
+
             self._id = -1
             self._datetime_created = None
 
