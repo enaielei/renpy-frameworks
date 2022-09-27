@@ -1,6 +1,7 @@
 init python in utils:
     import store
     from datetime import datetime
+    from pprint import pprint
 
     store.renpy.load_module("scripts/utils/helper")
     store.renpy.load_module("scripts/utils/base")
@@ -10,7 +11,8 @@ init python in utils:
             attrs["_one"] = {}
             attrs["_many"] = {}
             attrs["_uniques"] = uniques or []
-            return type.__new__(cls, name, bases, attrs)
+            ncls = type.__new__(cls, name, bases, attrs)
+            return ncls
 
         def __getitem__(cls, index):
             try: return cls._all()[index]
@@ -66,6 +68,14 @@ init python in utils:
 
         def on_delete(self):
             pass
+    
+        def clone(self, **kwargs):
+            props = vars(self).copy()
+            clone = self.__class__()
+            vars(clone).update(props)
+            for k, v in kwargs.items():
+                setattr(clone, k, v)
+            return clone
 
         def create(self):
             if self.created: return self
@@ -177,7 +187,8 @@ init python in utils:
             # has_many
             other._many[cls] = many_name
             setattr(cls, many_name, property(
-                store.renpy.partial(other._get_many, name=one_name)
+                store.renpy.partial(other._get_many, name=one_name),
+                store.renpy.partial(other._set_many, name=one_name)
             ))
 
             return cls
@@ -190,12 +201,22 @@ init python in utils:
 
         @classmethod
         def _set_one(cls, self, value, name):
-            setattr(self, "_{}_id".format(name), value.id if value and isinstance(value, cls) else -1)
+            name = "_{}_id".format(name)
+            setattr(self, name, value.id if value and isinstance(value, cls) else -1)
 
         @classmethod
         def _get_many(cls, self, name):
             return cls.get_all(
                 lambda e: getattr(e, name, None) and getattr(e, name).id == self.id)
+
+        @classmethod
+        def _set_many(cls, self, value, name):
+            values = cls.get_all(
+                lambda e: getattr(e, name, None) and getattr(e, name).id == self.id)
+            for v in values:
+                setattr(v, name, None)
+            for v in value:
+                setattr(v, name, self)
 
         @classmethod
         def _all(cls):
