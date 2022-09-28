@@ -44,6 +44,10 @@ init python in utils.helper:
         if "default" in kwargs: default = kwargs.pop("default")
         return (dct.get(k, default) for k in keys)
 
+    def update(dct, **kwargs):
+        dct.update(kwargs)
+        return dct
+
     def find(condition, iterable, default=None):
         return next(filter(condition, iterable), default)
 
