@@ -1,0 +1,78 @@
+init python in utils.phone.messenger:
+    renpy.load_module("scripts/utils/record")
+    renpy.load_module("scripts/utils/phone/messenger/message")
+    
+    import store
+    from store import utils
+    from store.utils import helper
+
+    class Convo(utils.Record):
+        @property
+        def messages(self):
+            return tuple(e for e in Message.all if e.membership.convo == self)
+
+        @property
+        def typings(self):
+            return tuple(e for e in Typing.all if e.membership.convo == self)
+
+        def __init__(self, name=None, user=None, *members):
+            utils.Record.__init__(self)
+
+            self.name = name
+            self.user = user
+            
+            self._members = (user,) + members
+
+        def on_create(self):
+            self.add_member(*self._members)
+            self._members = ()
+
+        @helper.action
+        def add_member(self, *members):
+            for mem in members:
+                if not mem or not mem.created: continue
+                Membership.create_by(mem, self)
+
+        @helper.action
+        def remove_member(self, *members):
+            for mem in members:
+                if not mem or not mem.created: continue
+                one = Membership.get(lambda e: e.user == mem and e.convo == self)
+                if one: one.delete()
+
+        @helper.action
+        def message(self, user, **kwargs):
+            mem = self.get_membership(user)
+            if mem: Message.create_by(mem, **kwargs)
+
+        @helper.action
+        def type(self, *users):
+            mems = filter(lambda e: e is not None, (self.get_membership(u) for u in users))
+            for m in mems: Typing(m).create()
+
+        @helper.action
+        def untype(self, *users):
+            typings = self.typings if not users else (e for e in self.typings if e.membership.user in users)
+            for t in typings: t.delete()
+
+        @helper.action
+        def type_for(self, *users, **kwargs):
+            self.type(*users)
+            renpy.pause(**kwargs)
+            self.untype(*users)
+
+        @helper.action
+        def type_message(self, user, **kwargs):
+            pref = "pause_"
+            pkwargs = {}
+            for k, v in tuple(kwargs.items()):
+                if not k.startswith(pref): continue
+                pkwargs[k.removeprefix(pref)] = kwargs.pop(k)
+
+            self.type_for(user, **pkwargs)
+            self.message(user, **kwargs)
+
+        def get_membership(self, user):
+            if not user.created: return
+            mem = Membership.get(lambda e: e.user == user and e.convo == self)
+            return mem

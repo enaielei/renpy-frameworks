@@ -11,22 +11,32 @@ init python in utils.phone:
         def kwargs(self):
             return {k: getattr(self, k) for k in self._kwargs if hasattr(self, k)}
 
-        def __init__(self, name=None, **kwargs):
+        def __init__(self, name=None, opened=None, installation=None, **kwargs):
             utils.Base.__init__(self)
 
             self.name = name or self.__class__.__name__.lower()
+            self.opened = opened
+            self.installation = installation
             self._kwargs = set()
 
             for k, v in kwargs.items():
                 self._kwargs.add(k)
                 setattr(self, k, v)
 
-        @store.utils.helper.action
+        @helper.action
         def show(self, **kwargs):
             kwrgs = self.kwargs
             kwrgs.update(kwargs)
             renpy.show_screen(self.name, **kwrgs)
 
-        @store.utils.helper.action
+        @helper.action
         def hide(self, *args, **kwargs):
             renpy.hide_screen(self.name, *args, **kwargs)
+
+        @helper.action
+        def open(self, screen):
+            self.opened = screen
+
+        @helper.action
+        def close(self):
+            self.opened = None

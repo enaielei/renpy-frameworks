@@ -1,0 +1,12 @@
+init python in utils.phone.messenger:
+    renpy.load_module("scripts/utils/record")
+    
+    import store
+    from store import utils
+
+    class User(utils.Record):
+        def __init__(self, name=None, person=None):
+            utils.Record.__init__(self)
+
+            self.name = name
+            self.person = person

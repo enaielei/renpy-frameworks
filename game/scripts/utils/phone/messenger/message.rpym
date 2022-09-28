@@ -1,0 +1,26 @@
+init python in utils.phone.messenger:
+    renpy.load_module("scripts/utils/phone/screen")
+
+    import store
+    from store import utils
+    from store.utils import helper, phone
+
+    class Message(utils.Record, uniques=[("membership", "datetime_created")]):
+        @property
+        def empty(self):
+            return all((not self.content,))
+
+        def __init__(self, membership=None, content=None):
+            utils.Record.__init__(self)
+
+            self.membership = membership
+            self.content = content
+
+        @helper.action
+        def clear(self):
+            self.content = ""
+
+        @helper.action
+        def send(self):
+            if self.created or self.empty: return
+            self.clone().create()

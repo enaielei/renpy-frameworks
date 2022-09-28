@@ -1,0 +1,18 @@
+init python in utils.phone.messenger:
+    renpy.load_module("scripts/utils/phone/screen")
+
+    import store
+    from store import utils
+    from store.utils import helper, phone
+
+    class Messenger(phone.Screen):
+        def __init__(self, user=None, opened_convo=None, name=None, opened=None, installation=None):
+            phone.Screen.__init__(self, name=name, user=user, opened=opened, opened_convo=opened_convo, installation=installation)
+
+        @helper.action
+        def open_convo(self, convo):
+            self.opened_convo = convo
+
+        @helper.action
+        def close_convo(self):
+            self.opened_convo = None

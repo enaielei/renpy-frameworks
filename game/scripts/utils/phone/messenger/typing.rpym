@@ -1,0 +1,12 @@
+init python in utils.phone.messenger:
+    renpy.load_module("scripts/utils/record")
+    
+    import store
+    from store import utils
+    from store.utils import helper
+
+    class Typing(utils.Record, uniques=[("membership",)]):
+        def __init__(self, membership=None):
+            utils.Record.__init__(self)
+
+            self.membership = membership
