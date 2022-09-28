@@ -8,7 +8,8 @@ init python in utils.phone:
 
     class App(utils.Record, uniques=[("name",)]):
         def __init__(self, name=None, image=None):
-            utils.Record.__init__(self)
-
-            self.name = name
-            self.image = image
+            utils.Record.__init__(
+                self,
+                name=name,
+                image=image,
+            )

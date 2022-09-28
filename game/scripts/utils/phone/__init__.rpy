@@ -21,3 +21,5 @@ init -1 python in utils.phone:
         
         Installation.has_one(Phone)
         Installation.has_one(App)
+
+    initialize()
