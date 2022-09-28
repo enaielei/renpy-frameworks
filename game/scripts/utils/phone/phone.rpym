@@ -1,0 +1,37 @@
+init python in utils.phone:
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/record")
+    renpy.load_module("scripts/utils/phone/app")
+    renpy.load_module("scripts/utils/phone/system")
+
+    import store
+    from store import utils
+    from store.utils import helper
+
+    class Phone(utils.Record):
+        def __init__(self):
+            utils.Record.__init__(self)
+
+            self.install_system(System())
+
+        @helper.action
+        def install_system(self, screen):
+            app = App.get(lambda e: e.name == "System")
+            if not app: app = App.create_by("System")
+            inst = Installation.get(lambda e: e.phone == self and e.app == app)
+            if not inst: inst = Installation.create_by(self, app, hidden=True)
+            inst.update(screen=screen)
+            self.system = inst
+
+        @helper.action
+        def install(self, app, screen):
+            if any((not app, not app.created)):
+                return
+            Installation.create_by(self, app, screen)
+
+        @helper.action
+        def uninstall(self, app):
+            if any((not app, not app.created)):
+                return
+            one = Installation.get(lambda e: e.phone == self and e.app == app)
+            if one: one.delete()

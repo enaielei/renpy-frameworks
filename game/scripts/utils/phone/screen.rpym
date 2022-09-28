@@ -1,0 +1,32 @@
+init python in utils.phone:
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/base")
+
+    import store
+    from store import utils
+    from store.utils import helper
+
+    class Screen(utils.Base):
+        @property
+        def kwargs(self):
+            return {k: getattr(self, k) for k in self._kwargs if hasattr(self, k)}
+
+        def __init__(self, name=None, **kwargs):
+            utils.Base.__init__(self)
+
+            self.name = name or self.__class__.__name__.lower()
+            self._kwargs = set()
+
+            for k, v in kwargs.items():
+                self._kwargs.add(k)
+                setattr(self, k, v)
+
+        @store.utils.helper.action
+        def show(self, **kwargs):
+            kwrgs = self.kwargs
+            kwrgs.update(kwargs)
+            renpy.show_screen(self.name, **kwrgs)
+
+        @store.utils.helper.action
+        def hide(self, *args, **kwargs):
+            renpy.hide_screen(self.name, *args, **kwargs)

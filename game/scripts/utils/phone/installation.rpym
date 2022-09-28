@@ -1,0 +1,16 @@
+init python in utils.phone:
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/record")
+
+    import store
+    from store import utils 
+    from store.utils import helper
+
+    class Installation(utils.Record, uniques=[("phone", "app")]):
+        def __init__(self, phone=None, app=None, screen=None, hidden=False):
+            utils.Record.__init__(self)
+
+            self.phone = phone
+            self.app = app
+            self.screen = screen
+            self.hidden = hidden

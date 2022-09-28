@@ -1,0 +1,14 @@
+init python in utils.phone:
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/record")
+
+    import store
+    from store import utils
+    from store.utils import helper
+
+    class App(utils.Record, uniques=[("name",)]):
+        def __init__(self, name=None, image=None):
+            utils.Record.__init__(self)
+
+            self.name = name
+            self.image = image

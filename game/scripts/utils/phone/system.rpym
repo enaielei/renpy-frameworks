@@ -1,8 +1,9 @@
 init python in utils.phone:
-    import store
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/phone/screen")
 
-    store.renpy.load_module("scripts/utils/helper")
-    store.renpy.load_module("scripts/utils/phone/screen")
+    import store
+    from store.utils import helper
 
     class System(Screen):
         def __init__(self, name=None, opened=None):
@@ -10,10 +11,10 @@ init python in utils.phone:
 
             self.opened = opened
 
-        @store.utils.helper.action
+        @helper.action
         def open(self, installation):
             self.opened = installation
 
-        @store.utils.helper.action
+        @helper.action
         def close(self):
             self.opened = None
