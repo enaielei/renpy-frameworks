@@ -9,51 +9,43 @@ init python in utils.phone.messenger:
     class Convo(utils.Record):
         @property
         def messages(self):
-            return tuple(e for e in Message.all if e.membership.convo == self)
+            return Message.get_all(lambda e: e.receiver == self)
 
         @property
         def typings(self):
-            return tuple(e for e in Typing.all if e.membership.convo == self)
+            return Typing.get_all(lambda e: e.receiver == self)
 
         def __init__(self, name=None, user=None, *members):
-            utils.Record.__init__(self)
-
-            self.name = name
-            self.user = user
-            
-            self._members = (user,) + members
+            utils.Record.__init__(
+                self,
+                name=name,
+                user=user,
+                _members=(user,) + members,
+            )
 
         def on_create(self):
-            self.add_member(*self._members)
+            self.add(*self._members)
             self._members = ()
 
         @helper.action
-        def add_member(self, *members):
-            for mem in members:
-                if not mem or not mem.created: continue
-                Membership.create_by(mem, self)
+        def add(self, *members):
+            Membership.add(self, *members)
 
         @helper.action
-        def remove_member(self, *members):
-            for mem in members:
-                if not mem or not mem.created: continue
-                one = Membership.get(lambda e: e.user == mem and e.convo == self)
-                if one: one.delete()
+        def remove(self, *members):
+            Membership.remove(self, *members)
 
         @helper.action
-        def message(self, user, **kwargs):
-            mem = self.get_membership(user)
-            if mem: Message.create_by(mem, **kwargs)
+        def message(self, *users, **kwargs):
+            for user in users: Message.add(user, self, **kwargs)
 
         @helper.action
         def type(self, *users):
-            mems = filter(lambda e: e is not None, (self.get_membership(u) for u in users))
-            for m in mems: Typing(m).create()
+            for user in users: Typing.add(user, self)
 
         @helper.action
         def untype(self, *users):
-            typings = self.typings if not users else (e for e in self.typings if e.membership.user in users)
-            for t in typings: t.delete()
+            for user in users: Typing.remove(user, self)
 
         @helper.action
         def type_for(self, *users, **kwargs):
@@ -62,15 +54,15 @@ init python in utils.phone.messenger:
             self.untype(*users)
 
         @helper.action
-        def type_message(self, user, **kwargs):
+        def type_message(self, *users, **kwargs):
             pref = "pause_"
             pkwargs = {}
             for k, v in tuple(kwargs.items()):
                 if not k.startswith(pref): continue
                 pkwargs[k.removeprefix(pref)] = kwargs.pop(k)
 
-            self.type_for(user, **pkwargs)
-            self.message(user, **kwargs)
+            self.type_for(*users, **pkwargs)
+            self.message(*users, **kwargs)
 
         def get_membership(self, user):
             if not user.created: return

@@ -38,3 +38,5 @@ init -1 python in utils.phone.messenger:
         Message.has_one(Membership)
 
         Typing.has_one(Membership)
+
+    initialize()

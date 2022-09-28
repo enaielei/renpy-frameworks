@@ -6,8 +6,8 @@ init python in utils.phone.messenger:
     from store.utils import helper, phone
 
     class Messenger(phone.Screen):
-        def __init__(self, user=None, opened_convo=None, name=None, opened=None, installation=None):
-            phone.Screen.__init__(self, name=name, user=user, opened=opened, opened_convo=opened_convo, installation=installation)
+        def __init__(self, user=None, opened_convo=None, **kwargs):
+            phone.Screen.__init__(self, user=user, opened_convo=opened_convo, **kwargs)
 
         @helper.action
         def open_convo(self, convo):

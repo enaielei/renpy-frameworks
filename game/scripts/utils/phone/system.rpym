@@ -6,5 +6,5 @@ init python in utils.phone:
     from store.utils import helper
 
     class System(Screen):
-        def __init__(self, name=None, opened=None, installation=None):
-            Screen.__init__(self, name=name, opened=opened, installation=installation)
+        def __init__(self, *args, **kwargs):
+            Screen.__init__(self, *args, **kwargs)

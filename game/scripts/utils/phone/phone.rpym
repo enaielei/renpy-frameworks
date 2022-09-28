@@ -10,9 +10,7 @@ init python in utils.phone:
 
     class Phone(utils.Record):
         def __init__(self, *installations):
-            utils.Record.__init__(self)
-
-            self._installations = installations
+            utils.Record.__init__(self, _installations=installations)
 
         def on_create(self):
             self.install_system(System())

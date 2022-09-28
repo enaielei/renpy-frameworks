@@ -8,9 +8,10 @@ init python in utils.phone:
 
     class Installation(utils.Record, uniques=[("phone", "app")]):
         def __init__(self, phone=None, app=None, screen=None, hidden=False):
-            utils.Record.__init__(self)
-
-            self.phone = phone
-            self.app = app
-            self.screen = screen
-            self.hidden = hidden
+            utils.Record.__init__(
+                self,
+                phone=phone,
+                app=app,
+                screen=screen,
+                hidden=hidden
+            )

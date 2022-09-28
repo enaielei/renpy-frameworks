@@ -10,11 +10,33 @@ init python in utils.phone.messenger:
         def empty(self):
             return all((not self.content,))
 
-        def __init__(self, membership=None, content=None):
-            utils.Record.__init__(self)
+        @property
+        def sender(self):
+            return self.membership.user if self.membership else None
 
-            self.membership = membership
-            self.content = content
+        @sender.setter
+        def sender(self, value):
+            if self.membership: self.membership.user = value
+
+        @property
+        def receiver(self):
+            return self.membership.convo if self.membership else None
+
+        @receiver.setter
+        def receiver(self, value):
+            if self.membership: self.membership.convo = value
+
+        def __init__(self, membership=None, content=None, sender=None, receiver=None):
+            utils.Record.__init__(
+                self,
+                membership=membership,
+                content=content
+            )
+
+            if not self.membership and sender and receiver:
+                mem = Membership.get(
+                    lambda e: e.user == sender and e.convo == receiver)
+                self.membership = mem
 
         @helper.action
         def clear(self):
@@ -24,3 +46,11 @@ init python in utils.phone.messenger:
         def send(self):
             if self.created or self.empty: return
             self.clone().create()
+
+        @helper.action
+        @classmethod
+        def add(cls, sender, *receivers, **kwargs):
+            if not sender or not sender.created: return
+            for re in receivers:
+                cls(membership=None,
+                    sender=sender, receiver=re, **kwargs).create()

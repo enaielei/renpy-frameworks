@@ -6,7 +6,22 @@ init python in utils.phone.messenger:
 
     class Membership(utils.Record, uniques=[("user", "convo")]):
         def __init__(self, user=None, convo=None):
-            utils.Record.__init__(self)
+            utils.Record.__init__(
+                self,
+                user=user,
+                convo=convo,
+            )
 
-            self.user = user
-            self.convo = convo
+        @helper.action
+        @classmethod
+        def add(cls, convo, *users):
+            if not convo or not convo.created: return
+            for user in users:
+                if not user or not user.created: continue
+                cls(user=user, convo=convo).create()
+
+        @helper.action
+        @classmethod
+        def remove(cls, convo, *users):
+            if not convo or not convo.created: return
+            cls.delete_by(lambda e: e.convo == convo and e.user in users)

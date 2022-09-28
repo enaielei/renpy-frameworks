@@ -6,7 +6,8 @@ init python in utils.phone.messenger:
 
     class User(utils.Record):
         def __init__(self, name=None, person=None):
-            utils.Record.__init__(self)
-
-            self.name = name
-            self.person = person
+            utils.Record.__init__(
+                self,
+                name=name,
+                person=person,
+            )

@@ -6,7 +6,45 @@ init python in utils.phone.messenger:
     from store.utils import helper
 
     class Typing(utils.Record, uniques=[("membership",)]):
-        def __init__(self, membership=None):
-            utils.Record.__init__(self)
+        @property
+        def empty(self):
+            return all((not self.content,))
 
-            self.membership = membership
+        @property
+        def sender(self):
+            return self.membership.user if self.membership else None
+
+        @sender.setter
+        def sender(self, value):
+            if self.membership: self.membership.user = value
+
+        @property
+        def receiver(self):
+            return self.membership.convo if self.membership else None
+
+        @receiver.setter
+        def receiver(self, value):
+            if self.membership: self.membership.convo = value
+
+        def __init__(self, membership=None, sender=None, receiver=None):
+            utils.Record.__init__(self, membership=membership)
+
+            if not self.membership and sender and receiver:
+                mem = Membership.get(
+                    lambda e: e.user == sender and e.convo == receiver)
+                self.membership = mem
+
+        @helper.action
+        @classmethod
+        def add(cls, sender, *receivers):
+            if not sender or not sender.created: return
+            for re in receivers:
+                cls(membership=None,
+                    sender=sender, receiver=re).create()
+
+        @helper.action
+        @classmethod
+        def remove(cls, sender, *receivers):
+            if not sender or not sender.created: return
+            cls.delete_by(
+                lambda e: e.sender == sender and e.receiver in receivers)
