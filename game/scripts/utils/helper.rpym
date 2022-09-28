@@ -89,7 +89,10 @@ init python in utils.helper:
         return _Action
 
     def action(function):
-        setattr(function, "Action", Action(function.__name__))
+        if isinstance(function, (staticmethod, classmethod)):
+            name = function.__func__.__name__
+        else: name = function.__name__
+        setattr(function, "Action", Action(name))
         return function
 
     def set_action(cls, *names):

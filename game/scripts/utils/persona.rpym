@@ -15,11 +15,14 @@ init python in utils:
             if value is not None:
                 value.name = self
 
-        def __init__(self, name=None, image=None, character=None):
-            Record.__init__(self)
-            self.name = name
-            self.image = image
-            self.character = character
+        def __init__(self, name=None, image=None, character=None, **kwargs):
+            Record.__init__(
+                self,
+                name=name,
+                image=image,
+                character=character,
+                **kwargs
+            )
 
         def __str__(self):
             return self.name

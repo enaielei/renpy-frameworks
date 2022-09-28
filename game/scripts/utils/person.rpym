@@ -23,9 +23,16 @@ init python in utils:
             image=None,
             character=None
         ):
-            self.family_name = family_name or ""
-            self.given_name = given_name or ""
-            self.middle_name = middle_name or ""
+            family_name = family_name or ""
+            given_name = given_name or ""
+            middle_name = middle_name or ""
             
             Persona.__init__(
-                self, name or self.given_name, image, character)
+                self,
+                family_name=family_name,
+                given_name=given_name,
+                middle_name=middle_name,
+                name=name or given_name,
+                image=image,
+                character=image,
+            )

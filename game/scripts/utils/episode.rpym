@@ -32,12 +32,13 @@ init python in utils:
             return renpy.seen_label(self.beginning) and \
                 renpy.seen_label(self.ending)
 
-        def __init__(self, title, description="", displayable=None):
-            Record.__init__(self)
-
-            self.title = title
-            self.description = description
-            self.displayable = displayable
+        def __init__(self, title=None, description=None, displayable=None):
+            Record.__init__(
+                self,
+                title=title,
+                description=description,
+                displayable=displayable
+            )
 
         def play(self):
             if self.beginning: renpy.run(Start(self.beginning))
