@@ -1,10 +1,10 @@
 init python in utils:
-    import store, os, json
-    from store import renpy, Movie
-
     renpy.load_module("scripts/utils/helper")
     renpy.load_module("scripts/utils/base")
     renpy.load_module("scripts/utils/animation")
+
+    import store, os, json
+    from store import renpy, Movie
 
     class Definer(Base):
         IMAGES = ('.jpeg', '.jpg', '.png', '.webp')

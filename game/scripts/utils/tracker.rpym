@@ -1,9 +1,8 @@
 init python in utils:
     import store
+    from store import config, Transform
 
     def _tracker(tr, st, at, interval=0):
-        renpy, config = store.renpy, store.config
-
         ssize = (config.screen_width, config.screen_height)
         csize = tr.child_size
         mpos = renpy.get_mouse_pos()
@@ -34,15 +33,15 @@ init python in utils:
         return interval
 
     def Tracker(child=None, interval=0, *args, **kwargs):
-        return store.Transform(
-            child, store.renpy.partial(
+        return Transform(
+            child, renpy.partial(
                 _tracker, interval=interval
             ), *args, **kwargs
         )
 
 init:
     transform tracker(interval=0):
-        function store.renpy.partial(utils._tracker, interval=interval)
+        function renpy.partial(utils._tracker, interval=interval)
     
     python:
         utils.tracker = tracker

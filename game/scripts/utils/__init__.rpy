@@ -8,6 +8,7 @@ init -1 python hide in utils:
         "scripts/utils/hint",
         "scripts/utils/episode",
         "scripts/utils/persona",
+        "scripts/utils/person",
     ]
 
     for module in modules:

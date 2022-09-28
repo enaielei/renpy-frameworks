@@ -1,10 +1,10 @@
 init python in utils:
+    renpy.load_module("scripts/utils/helper")
+    renpy.load_module("scripts/utils/base")
+
     import store
     from datetime import datetime
     from pprint import pprint
-
-    store.renpy.load_module("scripts/utils/helper")
-    store.renpy.load_module("scripts/utils/base")
 
     class RecordMeta(BaseMeta):
         def __new__(cls, name, bases, attrs, uniques=None):

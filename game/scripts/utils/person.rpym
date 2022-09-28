@@ -1,0 +1,31 @@
+init python in utils:
+    import store
+
+    class Person(Persona):
+        @property
+        def full_name(self):
+            rv = []
+            rv.append(self.given_name)
+            if self.middle_name: rv.append(self.middle_name)
+            rv.append(self.family_name)
+            return " ".join(rv)
+
+        @property
+        def initials(self):
+            return "".join((e[0] for e in self.full_name.split(" ")))
+
+        def __init__(
+            self,
+            family_name=None,
+            given_name=None,
+            middle_name=None,
+            name=None,
+            image=None,
+            character=None
+        ):
+            self.family_name = family_name or ""
+            self.given_name = given_name or ""
+            self.middle_name = middle_name or ""
+            
+            Persona.__init__(
+                self, name or self.given_name, image, character)

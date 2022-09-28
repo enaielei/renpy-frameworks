@@ -1,5 +1,6 @@
 init python in utils:
     import store
+    from store import config, Function
     
     class Hint():
         LAYER = "hint"
@@ -13,7 +14,7 @@ init python in utils:
 
         @property
         def active(self):
-            return bool(store.renpy.get_screen(self.screen))
+            return bool(renpy.get_screen(self.screen))
 
         def __init__(self, screen, text="", displayable=None, *args, **kwargs):
             self.screen = screen
@@ -37,19 +38,18 @@ init python in utils:
 
         @classmethod
         def update(cls):
-            screen = store.renpy.current_screen()
+            screen = renpy.current_screen()
             if cls.current and screen:
                 if cls.current.screen != screen.name:
                     cls.clear()
 
         @classmethod
         def initialize(cls, layer=None, screen=None):
-            config = store.config
             name = cls.__name__.lower()
             
             if not isinstance(layer, (list, tuple, set)): layer = [None]
             for l in layer:
-                store.renpy.add_layer(l or name, above="overlay", menu_clear=False)
+                renpy.add_layer(l or name, above="overlay", menu_clear=False)
 
             if not isinstance(screen, (list, tuple, set)): screen = [None]
             for s in screen:
@@ -65,17 +65,17 @@ init python in utils:
 
         @classmethod
         def new(cls, text="", displayable=None, *args, **kwargs):
-            screen = store.renpy.current_screen()
+            screen = renpy.current_screen()
             return cls(screen.name, text, displayable, *args, **kwargs)
 
         @classmethod
         def Set(cls, text="", displayable=None, *args, **kwargs):
-            return store.Function(cls.set, text, displayable, *args, **kwargs)
+            return Function(cls.set, text, displayable, *args, **kwargs)
 
         @classmethod
         def Update(cls):
-            return store.Function(cls.update)
+            return Function(cls.update)
 
         @classmethod
         def Clear(cls):
-            return store.Function(cls.clear)
+            return Function(cls.clear)

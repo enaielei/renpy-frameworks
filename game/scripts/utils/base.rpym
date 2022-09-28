@@ -6,9 +6,9 @@ init python in utils:
             for k, v in tuple(attrs.items()):
                 if callable(v):
                     Action = getattr(v, "Action", None)
-                    name = "".join(s.title() for s in k.split("_"))
-                    if Action is not None and name not in attrs:
-                        attrs[name] = Action
+                    aname = "".join(s.title() for s in k.split("_"))
+                    if Action is not None and aname not in attrs:
+                        attrs[aname] = Action
 
             return type.__new__(cls, name, bases, attrs)
 

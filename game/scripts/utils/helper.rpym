@@ -4,7 +4,7 @@ init python:
 init python in utils.helper:
     import store, os, sys, io, json
     from store import utils
-    from store import renpy, Movie
+    from store import renpy, Movie, Function
     from pprint import pprint
 
     _print = print
@@ -72,15 +72,15 @@ init python in utils.helper:
         # if screen: sys._getframe(1).f_locals[name] = value
 
     def ScreenGet(screen, name, value, default=None, layer=None):
-        return store.Function(screen_get, screen, name, value, default, layer)
+        return Function(screen_get, screen, name, value, default, layer)
 
     def ScreenSet(screen, name, value, layer=None):
-        return store.Function(screen_set, screen, name, value, layer)
+        return Function(screen_set, screen, name, value, layer)
 
     def Action(method):
         def _Action(self, *args, **kwargs):
             name = getattr(self, method)
-            return store.Function(name, *args, **kwargs)
+            return Function(name, *args, **kwargs)
 
         return _Action
 

@@ -1,13 +1,14 @@
 init python in utils:
+    renpy.load_module("scripts/utils/base")
+
     import store, math
+    from store import DynamicDisplayable
 
-    store.renpy.load_module("scripts/utils/base")
-
-    class Animation(Base, store.DynamicDisplayable):
+    class Animation(Base, DynamicDisplayable):
         @property
         def fps(self):
             fps = self._fps
-            if isinstance(fps, basestring): fps = store.renpy.eval(fps)
+            if isinstance(fps, basestring): fps = renpy.eval(fps)
             elif callable(fps): fps = fps()
             fps = max(fps, 0)
             return fps
@@ -19,7 +20,7 @@ init python in utils:
         @property
         def speed(self):
             speed = self._speed
-            if isinstance(speed, basestring): speed = store.renpy.eval(speed)
+            if isinstance(speed, basestring): speed = renpy.eval(speed)
             elif callable(speed): speed = speed()
             speed = max(speed, 0)
             return speed
@@ -45,7 +46,7 @@ init python in utils:
         def direction(self):
             direction = self._direction
             if isinstance(direction, basestring):
-                direction = store.renpy.eval(direction)
+                direction = renpy.eval(direction)
             elif callable(direction): direction = direction()
             if direction not in (-1, 1): direction = 1
             return direction
@@ -67,14 +68,14 @@ init python in utils:
         def paused(self):
             paused = self._paused
             if isinstance(paused, basestring):
-                paused = store.renpy.eval(paused)
+                paused = renpy.eval(paused)
             elif callable(paused): paused = paused()
             paused = bool(paused)
             return paused
 
         def __init__(self, frames, fps=30, speed=1.0, direction=1, paused=False, callback=None):
             Base.__init__(self)
-            store.DynamicDisplayable.__init__(self, self._animation)
+            DynamicDisplayable.__init__(self, self._animation)
 
             self.frames = frames
             self.fps = fps

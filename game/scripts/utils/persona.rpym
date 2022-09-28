@@ -1,7 +1,8 @@
 init python in utils:
-    import store
-
     renpy.load_module("scripts/utils/record")
+
+    import store
+    from store import config
 
     class Persona(Record):
         @property
@@ -28,8 +29,6 @@ init python in utils:
 
         @classmethod
         def initialize(cls, name=None):
-            config = store.config
-
             ocb = config.say_arguments_callback
             name = name or cls.__name__.lower()
             def cb(who, interact=True, *args, **kwargs):
