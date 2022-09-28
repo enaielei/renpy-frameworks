@@ -15,17 +15,26 @@ init -1 python hide in utils.phone.messenger:
 
     renpy.load_module("scripts/utils/person")
 
-    User.has_one(store.utils.Person)
-    User.has_many(Convo)
-    User.has_many(Membership)
+init -1 python in utils.phone.messenger:
+    def initialize(
+        User=User,
+        Person=store.utils.Person,
+        Convo=Convo,
+        Membership=Membership,
+        Message=Message,
+        Typing=Typing
+    ):
+        User.has_one(Person)
+        User.has_many(Convo)
+        User.has_many(Membership)
 
-    Convo.has_one(User)
-    Convo.has_many(Membership)
+        Convo.has_one(User)
+        Convo.has_many(Membership)
 
-    Membership.has_one(Convo)
-    Membership.has_one(User)
-    Membership.has_many(Message)
+        Membership.has_one(Convo)
+        Membership.has_one(User)
+        Membership.has_many(Message)
 
-    Message.has_one(Membership)
+        Message.has_one(Membership)
 
-    Typing.has_one(Membership)
+        Typing.has_one(Membership)

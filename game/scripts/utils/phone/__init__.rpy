@@ -12,7 +12,12 @@ init -1 python hide in utils.phone:
     for module in modules:
         renpy.load_module(module)
 
-    Phone.has_many(Installation)
-    
-    Installation.has_one(Phone)
-    Installation.has_one(App)
+init -1 python in utils.phone:
+    def initialize(
+        Phone=Phone,
+        Installation=Installation,
+    ):
+        Phone.has_many(Installation)
+        
+        Installation.has_one(Phone)
+        Installation.has_one(App)
